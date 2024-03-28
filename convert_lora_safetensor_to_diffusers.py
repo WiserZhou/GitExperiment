@@ -20,27 +20,7 @@ import argparse
 
 import torch
 
-def load_diffusers_lora(pipeline, state_dict, alpha=1.0):
-    # directly update weight in diffusers model
-    for key in state_dict:
-        # only process lora down key
-        if "up." in key: continue
 
-        up_key    = key.replace(".down.", ".up.")
-        model_key = key.replace("processor.", "").replace("_lora", "").replace("down.", "").replace("up.", "")
-        model_key = model_key.replace("to_out.", "to_out.0.")
-        layer_infos = model_key.split(".")[:-1]
-
-        curr_layer = pipeline.unet
-        while len(layer_infos) > 0:
-            temp_name = layer_infos.pop(0)
-            curr_layer = curr_layer.__getattr__(temp_name)
-
-        weight_down = state_dict[key]
-        weight_up   = state_dict[up_key]
-        curr_layer.weight.data += alpha * torch.mm(weight_up, weight_down).to(curr_layer.weight.data.device)
-
-    return pipeline
 
 
 def convert_lora(pipeline, state_dict, LORA_PREFIX_UNET="lora_unet", LORA_PREFIX_TEXT_ENCODER="lora_te", alpha=0.6):
